@@ -20,6 +20,11 @@ class BlogPublic(BlogBase):  # Response for create and read
     id: int
 
 
+class BlogUpdate(SQLModel):
+    title: str | None
+    content: str | None
+
+
 sqlite_file_name = "blogs.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
@@ -66,11 +71,29 @@ def read_blog_id(id: int):
         return blog
 
 
-@app.put("/api/blogs/{id}")
-def update_blog_id():
-    pass
+@app.put("/api/blogs/{id}", response_model=BlogPublic)
+def update_blog_id(blog_id: int, blog: BlogUpdate):
+    with Session(engine) as session:
+        db_blog = session.get(Blog, id)
+        if not blog:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
+        # get the value from above update obj and create a DB object
+        blog_updated_data = blog.model_dump(exclude_unset=True)
+        db_blog.sqlmodel_update(blog_updated_data)
+        session.add(db_blog)
+        session.commit()
+        session.refresh(db_blog)
+        return db_blog
 
 
 @app.delete("/api/blogs/{id}")
-def delete_blog():
-    pass
+def delete_blog(id: int):
+    with Session(engine) as session:
+        db_blog = session.get(Blog, id)
+        if not db_blog:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Blog not found")
+        session.delete(db_blog)
+        session.commit()
+        return {"detail": "Blog deleted"}
