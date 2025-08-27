@@ -2,3 +2,5 @@ fastapi[standard]
 sqlmodel
 sqlalchemy
 psycopg2
+pyjwt
+passlib[bcrypt]
